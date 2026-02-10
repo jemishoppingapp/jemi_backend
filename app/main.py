@@ -12,11 +12,11 @@ from app.core.exceptions import JEMIException
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan events."""
-    # Startup: Create tables
-    Base.metadata.create_all(bind=engine)
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        print(f"Database connection error: {e}")
     yield
-    # Shutdown: cleanup if needed
-    # Shutdown: cleanup if needed
 
 
 # Create FastAPI app
@@ -36,14 +36,14 @@ app = FastAPI(
     
     ## Authentication
     Most endpoints require JWT authentication. Include the token in the Authorization header:
-    ```
+```
     Authorization: Bearer <your_token>
-    ```
+```
     """,
     version=settings.APP_VERSION,
     lifespan=lifespan,
-    docs_url="/docs" 
-    redoc_url="/redoc" 
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
 # CORS middleware
@@ -75,7 +75,6 @@ async def jemi_exception_handler(request: Request, exc: JEMIException):
 async def general_exception_handler(request: Request, exc: Exception):
     """Handle unexpected exceptions."""
     if settings.DEBUG:
-        # Show detailed error in development
         return JSONResponse(
             status_code=500,
             content={
@@ -85,7 +84,6 @@ async def general_exception_handler(request: Request, exc: Exception):
             },
         )
     else:
-        # Hide details in production
         return JSONResponse(
             status_code=500,
             content={
@@ -118,6 +116,6 @@ def root():
     return {
         "name": settings.APP_NAME,
         "version": settings.APP_VERSION,
-        "docs": f"{settings.API_V1_PREFIX}/docs" if settings.DEBUG else None,
+        "docs": "/docs",
         "health": "/health",
     }
