@@ -12,11 +12,10 @@ from app.core.exceptions import JEMIException
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan events."""
-    # Startup: Create tables (for development)
-    # In production, use Alembic migrations
-    if settings.DEBUG:
-        Base.metadata.create_all(bind=engine)
+    # Startup: Create tables
+    Base.metadata.create_all(bind=engine)
     yield
+    # Shutdown: cleanup if needed
     # Shutdown: cleanup if needed
 
 
@@ -43,8 +42,8 @@ app = FastAPI(
     """,
     version=settings.APP_VERSION,
     lifespan=lifespan,
-    docs_url="/docs" if settings.DEBUG else None,
-    redoc_url="/redoc" if settings.DEBUG else None,
+    docs_url="/docs" 
+    redoc_url="/redoc" 
 )
 
 # CORS middleware
