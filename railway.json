@@ -1,13 +1,22 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "NIXPACKS"
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "startCommand": "uvicorn app.main:app --host 0.0.0.0 --port $PORT",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 30,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3
   }
 }
+```
+
+---
+
+## 4. UPDATE `ALLOWED_ORIGINS` in Railway
+
+In Railway dashboard → Variables, update:
+```
+ALLOWED_ORIGINS=https://frontend-five-pi-63.vercel.app,http://localhost:5173
