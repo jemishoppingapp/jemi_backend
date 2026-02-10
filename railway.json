@@ -11,12 +11,3 @@
     "restartPolicyMaxRetries": 3
   }
 }
-```
-
----
-
-## 4. UPDATE `ALLOWED_ORIGINS` in Railway
-
-In Railway dashboard → Variables, update:
-```
-ALLOWED_ORIGINS=https://frontend-five-pi-63.vercel.app,http://localhost:5173
