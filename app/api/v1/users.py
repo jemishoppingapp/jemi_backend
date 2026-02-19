@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.api.deps import get_current_user
 from app.models.user import User
-from app.schemas.user import UserResponse, UserUpdate, AddressCreate, AddressResponse
+from app.schemas.user import UserResponse, UserUpdate, ProfileCompleteData, AddressCreate, AddressResponse
 from app.schemas.common import ApiResponse
 from app.services.user import UserService
 
@@ -18,12 +18,7 @@ def get_profile(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """
-    Get current user's profile.
-    
-    - GET /api/v1/user/profile
-    - Matches frontend: ENDPOINTS.USER.PROFILE
-    """
+    """GET /api/v1/user/profile"""
     service = UserService(db)
     result = service.get_profile(current_user)
     return ApiResponse(data=result, success=True)
@@ -35,15 +30,27 @@ def update_profile(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """
-    Update current user's profile.
-    
-    - PUT /api/v1/user/profile
-    - Matches frontend: ENDPOINTS.USER.PROFILE
-    """
+    """PUT /api/v1/user/profile"""
     service = UserService(db)
     result = service.update_profile(current_user, data)
     return ApiResponse(data=result, message="Profile updated", success=True)
+
+
+@router.put("/profile/complete", response_model=ApiResponse[UserResponse])
+def complete_profile(
+    data: ProfileCompleteData,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    PUT /api/v1/user/profile/complete
+    
+    Profile completion gate — required before checkout.
+    Sets nickname, alt_phone, address, department, level.
+    """
+    service = UserService(db)
+    result = service.complete_profile(current_user, data)
+    return ApiResponse(data=result, message="Profile completed", success=True)
 
 
 # ============ Address Endpoints ============
@@ -53,12 +60,6 @@ def get_addresses(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """
-    Get user's addresses.
-    
-    - GET /api/v1/user/addresses
-    - Matches frontend: ENDPOINTS.USER.ADDRESSES
-    """
     service = UserService(db)
     result = service.get_addresses(current_user)
     return ApiResponse(data=result, success=True)
@@ -70,12 +71,6 @@ def add_address(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """
-    Add new address.
-    
-    - POST /api/v1/user/addresses
-    - Matches frontend: ENDPOINTS.USER.ADDRESSES
-    """
     service = UserService(db)
     result = service.add_address(current_user, data)
     return ApiResponse(data=result, message="Address added", success=True)
@@ -88,12 +83,6 @@ def update_address(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """
-    Update existing address.
-    
-    - PUT /api/v1/user/addresses/{id}
-    - Matches frontend: ENDPOINTS.USER.ADDRESS(id)
-    """
     service = UserService(db)
     result = service.update_address(current_user, address_id, data)
     return ApiResponse(data=result, message="Address updated", success=True)
@@ -105,12 +94,6 @@ def delete_address(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """
-    Delete address.
-    
-    - DELETE /api/v1/user/addresses/{id}
-    - Matches frontend: ENDPOINTS.USER.ADDRESS(id)
-    """
     service = UserService(db)
     service.delete_address(current_user, address_id)
     return ApiResponse(data={"deleted": True}, message="Address deleted", success=True)
@@ -122,11 +105,6 @@ def set_default_address(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """
-    Set address as default.
-    
-    - POST /api/v1/user/addresses/{id}/default
-    """
     service = UserService(db)
     result = service.set_default_address(current_user, address_id)
     return ApiResponse(data=result, message="Default address updated", success=True)

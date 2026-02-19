@@ -15,6 +15,15 @@ class User(Base):
     avatar = Column(String(500), nullable=True)
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
+    
+    # Profile completion fields (required before checkout)
+    nickname = Column(String(50), nullable=True)
+    alt_phone = Column(String(20), nullable=True)
+    address = Column(String(500), nullable=True)      # Hostel / area
+    department = Column(String(100), nullable=True)
+    level = Column(String(30), nullable=True)          # e.g. "300 Level"
+    profile_completed = Column(Boolean, default=False)
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
@@ -30,11 +39,11 @@ class Address(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    label = Column(String(100), nullable=False)  # e.g., "Home", "School", "Hostel"
+    label = Column(String(100), nullable=False)
     street = Column(String(500), nullable=False)
     city = Column(String(100), nullable=False)
     state = Column(String(100), nullable=False)
-    landmark = Column(String(255), nullable=True)  # Helpful for campus pickups
+    landmark = Column(String(255), nullable=True)
     is_default = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     

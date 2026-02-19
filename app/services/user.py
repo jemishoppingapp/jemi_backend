@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 
 from app.models.user import User, Address
-from app.schemas.user import UserResponse, UserUpdate, AddressCreate, AddressResponse
+from app.schemas.user import UserResponse, UserUpdate, ProfileCompleteData, AddressCreate, AddressResponse
 from app.core.exceptions import NotFoundException, BadRequestException
 from app.core.validators import normalize_phone
 
@@ -14,17 +14,13 @@ class UserService:
         self.db = db
     
     def get_profile(self, user: User) -> UserResponse:
-        """Get user profile."""
         return UserResponse.model_validate(user)
     
     def update_profile(self, user: User, data: UserUpdate) -> UserResponse:
-        """Update user profile."""
         if data.name is not None:
             user.name = data.name
-        
         if data.phone is not None:
             normalized_phone = normalize_phone(data.phone)
-            # Check if phone is already used by another user
             existing = self.db.query(User).filter(
                 User.phone == normalized_phone,
                 User.id != user.id,
@@ -32,26 +28,35 @@ class UserService:
             if existing:
                 raise BadRequestException("Phone number already in use")
             user.phone = normalized_phone
-        
         if data.avatar is not None:
             user.avatar = data.avatar
         
         self.db.commit()
         self.db.refresh(user)
+        return UserResponse.model_validate(user)
+    
+    def complete_profile(self, user: User, data: ProfileCompleteData) -> UserResponse:
+        """Complete profile — required before checkout."""
+        normalized_alt = normalize_phone(data.alt_phone)
         
+        user.nickname = data.nickname
+        user.alt_phone = normalized_alt
+        user.address = data.address
+        user.department = data.department
+        user.level = data.level
+        user.profile_completed = True
+        
+        self.db.commit()
+        self.db.refresh(user)
         return UserResponse.model_validate(user)
     
     # ============ Address Operations ============
     
     def get_addresses(self, user: User) -> list[AddressResponse]:
-        """Get all user addresses."""
         return [AddressResponse.model_validate(a) for a in user.addresses]
     
     def add_address(self, user: User, data: AddressCreate) -> AddressResponse:
-        """Add new address."""
-        # If this is the first address or marked as default, make it default
         if data.is_default or not user.addresses:
-            # Unset other defaults
             for addr in user.addresses:
                 addr.is_default = False
         
@@ -64,29 +69,19 @@ class UserService:
             landmark=data.landmark,
             is_default=data.is_default or not user.addresses,
         )
-        
         self.db.add(address)
         self.db.commit()
         self.db.refresh(address)
-        
         return AddressResponse.model_validate(address)
     
-    def update_address(
-        self,
-        user: User,
-        address_id: int,
-        data: AddressCreate,
-    ) -> AddressResponse:
-        """Update existing address."""
+    def update_address(self, user: User, address_id: int, data: AddressCreate) -> AddressResponse:
         address = self.db.query(Address).filter(
             Address.id == address_id,
             Address.user_id == user.id,
         ).first()
-        
         if not address:
             raise NotFoundException("Address", address_id)
         
-        # If setting as default, unset others
         if data.is_default:
             for addr in user.addresses:
                 addr.is_default = False
@@ -100,25 +95,20 @@ class UserService:
         
         self.db.commit()
         self.db.refresh(address)
-        
         return AddressResponse.model_validate(address)
     
     def delete_address(self, user: User, address_id: int) -> None:
-        """Delete address."""
         address = self.db.query(Address).filter(
             Address.id == address_id,
             Address.user_id == user.id,
         ).first()
-        
         if not address:
             raise NotFoundException("Address", address_id)
         
         was_default = address.is_default
-        
         self.db.delete(address)
         self.db.commit()
         
-        # If deleted address was default, set another as default
         if was_default and user.addresses:
             self.db.refresh(user)
             if user.addresses:
@@ -126,21 +116,16 @@ class UserService:
                 self.db.commit()
     
     def set_default_address(self, user: User, address_id: int) -> AddressResponse:
-        """Set address as default."""
         address = self.db.query(Address).filter(
             Address.id == address_id,
             Address.user_id == user.id,
         ).first()
-        
         if not address:
             raise NotFoundException("Address", address_id)
         
-        # Unset other defaults
         for addr in user.addresses:
             addr.is_default = False
-        
         address.is_default = True
         self.db.commit()
         self.db.refresh(address)
-        
         return AddressResponse.model_validate(address)

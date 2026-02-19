@@ -36,25 +36,16 @@ class UserBase(BaseModel):
     @field_validator("phone")
     @classmethod
     def validate_nigerian_phone(cls, v: str) -> str:
-        """Validate Nigerian phone number format"""
-        # Remove spaces and dashes
         cleaned = re.sub(r"[\s\-]", "", v)
-        
-        # Nigerian phone patterns:
-        # +234XXXXXXXXXX (14 chars)
-        # 234XXXXXXXXXX (13 chars)
-        # 0XXXXXXXXXX (11 chars)
         patterns = [
-            r"^\+234[789]\d{9}$",  # +234 format
-            r"^234[789]\d{9}$",    # 234 format
-            r"^0[789]\d{9}$",      # Local format
+            r"^\+234[789]\d{9}$",
+            r"^234[789]\d{9}$",
+            r"^0[789]\d{9}$",
         ]
-        
         if not any(re.match(p, cleaned) for p in patterns):
             raise ValueError(
                 "Invalid Nigerian phone number. Use format: +234XXXXXXXXXX, 234XXXXXXXXXX, or 0XXXXXXXXXX"
             )
-        
         return cleaned
 
 
@@ -63,12 +54,18 @@ class UserCreate(UserBase):
 
 
 class UserResponse(BaseModel):
-    """Matches frontend User interface"""
+    """Matches frontend User interface — includes profile fields."""
     id: int
     name: str
     email: str
     phone: str
     avatar: Optional[str] = None
+    nickname: Optional[str] = None
+    alt_phone: Optional[str] = None
+    address: Optional[str] = None
+    department: Optional[str] = None
+    level: Optional[str] = None
+    profile_completed: bool = False
     created_at: datetime
     addresses: list[AddressResponse] = []
     
@@ -77,7 +74,6 @@ class UserResponse(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    """Matches frontend ProfileUpdateData"""
     name: Optional[str] = Field(None, min_length=2, max_length=255)
     phone: Optional[str] = Field(None, min_length=10, max_length=20)
     avatar: Optional[str] = None
@@ -98,16 +94,36 @@ class UserUpdate(BaseModel):
         return cleaned
 
 
+class ProfileCompleteData(BaseModel):
+    """Profile completion — gates checkout."""
+    nickname: str = Field(..., min_length=2, max_length=50)
+    alt_phone: str = Field(..., min_length=10, max_length=20)
+    address: str = Field(..., min_length=5, max_length=500)
+    department: str = Field(..., min_length=2, max_length=100)
+    level: str = Field(..., min_length=2, max_length=30)
+    
+    @field_validator("alt_phone")
+    @classmethod
+    def validate_nigerian_phone(cls, v: str) -> str:
+        cleaned = re.sub(r"[\s\-]", "", v)
+        patterns = [
+            r"^\+234[789]\d{9}$",
+            r"^234[789]\d{9}$",
+            r"^0[789]\d{9}$",
+        ]
+        if not any(re.match(p, cleaned) for p in patterns):
+            raise ValueError("Invalid Nigerian phone number")
+        return cleaned
+
+
 # ============ Auth Schemas ============
 
 class LoginCredentials(BaseModel):
-    """Matches frontend LoginCredentials"""
     email: EmailStr
     password: str
 
 
 class RegisterData(BaseModel):
-    """Matches frontend RegisterData"""
     name: str = Field(..., min_length=2, max_length=255)
     email: EmailStr
     phone: str = Field(..., min_length=10, max_length=20)
@@ -128,14 +144,12 @@ class RegisterData(BaseModel):
 
 
 class AuthResponse(BaseModel):
-    """Matches frontend AuthResponse"""
     user: UserResponse
     token: str
     refresh_token: str
 
 
 class TokenData(BaseModel):
-    """JWT token payload data"""
     user_id: int
     email: str
     exp: Optional[datetime] = None

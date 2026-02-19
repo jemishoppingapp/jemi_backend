@@ -19,7 +19,14 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
     # CORS
-    ALLOWED_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
+    ALLOWED_ORIGINS: str = "http://localhost:5173,http://localhost:3000,https://jemi.ng"
+    
+    # Paystack
+    PAYSTACK_SECRET_KEY: str = "sk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    PAYSTACK_PUBLIC_KEY: str = "pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    
+    # Frontend URL (for Paystack callback)
+    FRONTEND_URL: str = "http://localhost:5173"
     
     @property
     def cors_origins(self) -> list[str]:
